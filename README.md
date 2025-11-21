@@ -1,6 +1,6 @@
 # larmip-ais
 
-This module ports into the FACTS framework the Antatctic dynamic contribution emulation of the Linear response of the Antarctic ice sheet to future warming Model Intercomparision Project (LARMIP) 2020. It augments it with a surface mass balance term following IPCC AR5.
+This module ports into the FACTS framework the Antarctic dynamic contribution emulation of the Linear response of the Antarctic ice sheet to future warming Model Intercomparision Project (LARMIP) 2020. It augments it with a surface mass balance term following IPCC AR5.
 
 See [https://github.com/ALevermann/larmip2020](https://github.com/ALevermann/larmip2020) for the original LARMIP2020 code.
 
@@ -38,3 +38,115 @@ mkdir -p ./data/output
 # Add location file to input dir 
 echo "New_York	12	40.70	-74.01" > ./data/input/location.lst
 ```
+
+>[!IMPORTANT]
+> This module **requires** a `climate.nc` file that is the output of the FACTS FAIR module, which is created outside of this prototype. Before running the example, manually move the file into `./data/input` and ensure that the filename matches that passed to `climate-file`. The number of samples (`--nsamps`) drawn in the FAIR run must pass the number of samples specified in this run. 
+
+
+Run the application:
+```shell
+docker run --rm \                                                                ok | 24s | 16:31:06 
+-v /path/to/data/input:/mnt/larmip_data_in \
+-v /path/to/data/output:/mnt/larmip_data_out \
+larmip-ais \
+--scenario 'ssp245' \
+--pipeline-id 'my_pipeline_id' \
+--climate-data-file /mnt/larmip_data_in/climate.nc \
+--refyear-start 1850 \
+--refyear-end 1900 \
+--year-start 1900 \
+--year-end 2300 \
+--scaling-coefficients-dir /mnt/larmip_data_in/ScalingCoefficients \
+--r-functions-dir /mnt/larmip_data_in/RFunctions \
+--nsamps 2000 \
+--seed 1234 \
+--pyear-start 2020 \
+--pyear-end 2150 \
+--pyear-step 10 \
+--baseyear 2005 \
+--ais-global-output-file /mnt/larmip_data_out/ais_gslr.nc \
+--eais-global-output-file /mnt/larmip_data_out/eais_gslr.nc \
+--wais-global-output-file /mnt/larmip_data_out/wais_gslr.nc \
+--pen-global-output-file /mnt/larmip_data_out/pen_gslr.nc \
+--smb-global-output-file /mnt/larmip_data_out/smb_gslr.nc \
+--location-file /mnt/larmip_data_in/location.lst \
+--chunksize 50 \
+--fingerprint-dir /mnt/larmip_data_in/FPRINT/ \
+--wais-local-output-file /mnt/larmip_data_out/wais_lslr.nc \
+--eais-local-output-file /mnt/larmip_data_out/eais_lslr.nc \
+--ais-local-output-file /mnt/larmip_data_out/ais_lslr.nc
+
+```
+
+## Features
+```shell
+Usage: larmip-ais [OPTIONS]
+
+Options:
+  --scenario TEXT                 Emission scenario for ice sheet projections
+                                  [required]
+  --pipeline-id TEXT              Unique identifier for this instance of the
+                                  module  [required]
+  --climate-data-file TEXT        NetCDF4/HDF5 file containing surface
+                                  temperature data  [required]
+  --refyear-start INTEGER         Start year for reference period  [default:
+                                  1850]
+  --refyear-end INTEGER           End year for reference period  [default:
+                                  1900]
+  --year-start INTEGER            Start year for temperature series  [default:
+                                  1900]
+  --year-end INTEGER              End year for temperature series  [default:
+                                  2300]
+  --scaling-coefficients-dir TEXT
+                                  [required]
+  --r-functions-dir TEXT          [required]
+  --nsamps INTEGER                [required]
+  --seed INTEGER
+  --pyear-start INTEGER           [default: 2000]
+  --pyear-end INTEGER             [default: 2300]
+  --pyear-step INTEGER            [default: 10]
+  --baseyear INTEGER              [default: 2005]
+  --cyear-start INTEGER
+  --cyear-end INTEGER
+  --ais-global-output-file TEXT   File path to save AIS-wide sea-level
+                                  projections
+  --eais-global-output-file TEXT  File path to save East Antarctic Ice Sheet
+                                  sea-level projections
+  --pen-global-output-file TEXT   File path to save Peninsular Antarctica sea-
+                                  level projections
+  --wais-global-output-file TEXT  File path to save West Antarctic Ice Sheet
+                                  sea-level projections
+  --smb-global-output-file TEXT   File path to save Antarctic SMB sea-level
+                                  projections
+  --location-file TEXT            File that contains name, id, lat, and lon of
+                                  points for localization
+  --chunksize INTEGER             Number of locations to process at a time
+                                  [default: 50]
+  --fingerprint-dir TEXT          Directory containing ice sheet fingerprints
+  --wais-local-output-file TEXT   File path to save localized West Antarctic
+                                  Ice Sheet sea-level projections
+  --eais-local-output-file TEXT   File path to save localized East Antarctic
+                                  Ice Sheet sea-level projections
+  --ais-local-output-file TEXT    File path to save localized total Antarctic
+                                  sea-level projections
+  --help                          Show this message and exit.
+```
+See this help documentation by passing the `--help` flag when running the application, for example:
+```shell
+docker run --rm larmip-ais --help
+```
+
+## Build the container locally
+You can build the container with Docker by running the following command from the repository root:
+
+```shell
+docker build -t larmip-ais .
+```
+
+## Results
+This module writes local and global SLR contribution projection NetCDF files for AIS, EAIS, WAIS and global for Antarctic peninsula and Antarctic surface mass balance. 
+
+## Support 
+Source code is available online at https://github.com/fact-sealevel/larmip-ais. This software is open source, available under the MIT license.
+
+Please file issues in the issue tracker at https://github.com/fact-sealevel/larmip-ais/issues.
