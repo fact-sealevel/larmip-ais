@@ -1,35 +1,34 @@
 import numpy as np
 import sys
 import os
-import pickle
 import time
 import argparse
-import re
-from read_locationfile import ReadLocationFile
-from AssignFP import AssignFP
-
 import xarray as xr
 import dask.array as da
 
+from larmip_ais.read_locationfile import ReadLocationFile
+from larmip_ais.AssignFP import AssignFP
 
-def larmip_postprocess_icesheet(locationfilename, chunksize, pipeline_id):
-
-	# Read in the projections
-	projfile = "{}_projections.pkl".format(pipeline_id)
-	with open(projfile, 'rb') as f:
-		my_data = pickle.load(f)
+def larmip_postprocess_icesheet(
+		project_dict,
+		location_file, 
+		chunksize, 
+		pipeline_id,
+		fingerprint_dir,
+		wais_local_output_file,
+		eais_local_output_file,
+		ais_local_output_file):
 
 	# Extract the data from the file
-	waissamps = my_data['sl_r2'] + my_data['sl_r3'] + my_data['sl_r4'] + my_data['sl_r5']
-	eaissamps = my_data['sl_r1']
-	targyears = my_data['targyears']
-	scenario = my_data['scenario']
-	baseyear = my_data['baseyear']
-	f.close()
+	waissamps = project_dict['sl_r2'] + project_dict['sl_r3'] + project_dict['sl_r4'] + project_dict['sl_r5']
+	eaissamps = project_dict['sl_r1']
+	targyears = project_dict['targyears']
+	scenario = project_dict['scenario']
+	baseyear = project_dict['baseyear']
 
 	# Load the site locations
-	locationfile = os.path.join(os.path.dirname(__file__), locationfilename)
-	(_, site_ids, site_lats, site_lons) = ReadLocationFile(locationfile)
+	#locationfile = os.path.join(os.path.dirname(__file__), locationfilename)
+	(_, site_ids, site_lats, site_lons) = ReadLocationFile(location_file)
 
 	# Get some dimension data from the loaded data structures
 	nsamps = eaissamps.shape[0]
@@ -37,9 +36,9 @@ def larmip_postprocess_icesheet(locationfilename, chunksize, pipeline_id):
 	nsites = len(site_ids)
 
 	# Get the fingerprints for all sites from all ice sheets
-	fpdir = os.path.join(os.path.dirname(__file__), "FPRINT")
-	waisfp = da.array(AssignFP(os.path.join(fpdir,"fprint_wais.nc"), site_lats, site_lons))
-	eaisfp = da.array(AssignFP(os.path.join(fpdir,"fprint_eais.nc"), site_lats, site_lons))
+	#fpdir = os.path.join(os.path.dirname(__file__), "FPRINT")
+	waisfp = da.array(AssignFP(os.path.join(fingerprint_dir,"fprint_wais.nc"), site_lats, site_lons))
+	eaisfp = da.array(AssignFP(os.path.join(fingerprint_dir,"fprint_eais.nc"), site_lats, site_lons))
 
 	# Rechunk the fingerprints for memory
 	waisfp = waisfp.rechunk(chunksize)
@@ -78,11 +77,14 @@ def larmip_postprocess_icesheet(locationfilename, chunksize, pipeline_id):
 		coords={"years": targyears, "locations": site_ids, "samples": np.arange(nsamps)}, attrs=ncvar_attributes)
 
 	# Write the netcdf output files
-	wais_out.to_netcdf("{0}_{1}_localsl.nc".format(pipeline_id, "WAIS"), encoding={"sea_level_change": {"dtype": "f4", "zlib": True, "complevel":4, "_FillValue": nc_missing_value}})
-	eais_out.to_netcdf("{0}_{1}_localsl.nc".format(pipeline_id, "EAIS"), encoding={"sea_level_change": {"dtype": "f4", "zlib": True, "complevel":4, "_FillValue": nc_missing_value}})
-	ais_out.to_netcdf("{0}_localsl.nc".format(pipeline_id), encoding={"sea_level_change": {"dtype": "f4", "zlib": True, "complevel":4, "_FillValue": nc_missing_value}})
+	wais_out.to_netcdf(wais_local_output_file, 
+					encoding={"sea_level_change": {"dtype": "f4", "zlib": True, "complevel":4, "_FillValue": nc_missing_value}})
+	eais_out.to_netcdf(eais_local_output_file,
+					encoding={"sea_level_change": {"dtype": "f4", "zlib": True, "complevel":4, "_FillValue": nc_missing_value}})
+	ais_out.to_netcdf(ais_local_output_file, 
+				   encoding={"sea_level_change": {"dtype": "f4", "zlib": True, "complevel":4, "_FillValue": nc_missing_value}})
 
-	return(None)
+	return None
 
 
 if __name__ == '__main__':

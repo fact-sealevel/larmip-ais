@@ -2,7 +2,6 @@ import numpy as np
 import argparse
 import os
 import sys
-import pickle
 
 
 def ReadOceanScaling(fname):
@@ -30,17 +29,21 @@ def ReadOceanScaling(fname):
 
 
 
-def larmip_fit_icesheet(pipeline_id):
+def larmip_fit_icesheet(pipeline_id,
+						scaling_coefficients_dir,
+						):
 
 	# Read in the ocean scaling
 	NumOmodel = 19
-	OS_NoDelay_R1, OS_WiDelay_R1, OS_Delay_R1 = ReadOceanScaling("./ScalingCoefficients/OceanScaling/OS_R1.dat")
-	OS_NoDelay_R2, OS_WiDelay_R2, OS_Delay_R2 = ReadOceanScaling("./ScalingCoefficients/OceanScaling/OS_R2.dat")
-	OS_NoDelay_R3, OS_WiDelay_R3, OS_Delay_R3 = ReadOceanScaling("./ScalingCoefficients/OceanScaling/OS_R3.dat")
-	OS_NoDelay_R4, OS_WiDelay_R4, OS_Delay_R4 = ReadOceanScaling("./ScalingCoefficients/OceanScaling/OS_R4.dat")
+	OS_NoDelay_R1, OS_WiDelay_R1, OS_Delay_R1 = ReadOceanScaling(os.path.join(scaling_coefficients_dir,"OceanScaling/OS_R1.dat"))
+	OS_NoDelay_R2, OS_WiDelay_R2, OS_Delay_R2 = ReadOceanScaling(os.path.join(scaling_coefficients_dir, "OceanScaling/OS_R2.dat"))
+	OS_NoDelay_R3, OS_WiDelay_R3, OS_Delay_R3 = ReadOceanScaling(os.path.join(scaling_coefficients_dir,"OceanScaling/OS_R3.dat"))
+	OS_NoDelay_R4, OS_WiDelay_R4, OS_Delay_R4 = ReadOceanScaling(os.path.join(scaling_coefficients_dir,"OceanScaling/OS_R4.dat"))
 
 	# Read melting sensitivity
-	fname = "./ScalingCoefficients/MeltSensitivity/MeltSensitivity.dat" # File to read
+	fname = os.path.join(scaling_coefficients_dir,
+					   "MeltSensitivity/MeltSensitivity.dat"
+					   ) # File to read
 	with open(fname) as f:
 		MeltSensitivity = np.array([float(row) for row in f])
 
@@ -50,27 +53,25 @@ def larmip_fit_icesheet(pipeline_id):
 			"OS_NoDelay_R3": OS_NoDelay_R3, "OS_WiDelay_R3": OS_WiDelay_R3, "OS_Delay_R3": OS_Delay_R3, \
 			"OS_NoDelay_R4": OS_NoDelay_R4, "OS_WiDelay_R4": OS_WiDelay_R4, "OS_Delay_R4": OS_Delay_R4, \
 			"MeltSensitivity": MeltSensitivity, "NumOmodel": NumOmodel}
-	outfile = open(os.path.join(os.path.dirname(__file__), "{}_fit.pkl".format(pipeline_id)), 'wb')
-	pickle.dump(output, outfile)
-	outfile.close()
-
-	return(None)
+	
+	return output
 
 
-def larmip_fit_smb(pipeline_id):
+def larmip_fit_smb(pipeline_id,
+				   preprocess_dict):
 
 	# Read in the preprocessed data
-	data_file = "{}_preprocess.pkl".format(pipeline_id)
-	try:
-		f = open(data_file, 'rb')
-	except:
-		print("Cannot open data file: {}\n".format(data_file))
+	#data_file = "{}_preprocess.pkl".format(pipeline_id)
+	#try:
+	#	f = open(data_file, 'rb')
+	#except:
+	#	print("Cannot open data file: {}\n".format(data_file))
 
 	# Extract the data variables
-	my_config = pickle.load(f)
-	f.close()
+	#my_config = pickle.load(f)
+	#f.close()
 
-	scenario = my_config["scenario"]
+	scenario = preprocess_dict["scenario"]
 
 	# m SLE from Antarctica during 1996 to 2005 according to AR5 chapter 4
 	dant = (2.37+0.13)*1e-3
@@ -116,13 +117,9 @@ def larmip_fit_smb(pipeline_id):
 				'adyn_finalrange': adyn_finalrange, 'adyn_startratemean': adyn_startratemean, \
 				'adyn_startratepm': adyn_startratepm}
 
-	# Write the configuration to a file
-	outdir = os.path.dirname(__file__)
-	outfile = open(os.path.join(outdir, "{}_fitsmb.pkl".format(pipeline_id)), 'wb')
-	pickle.dump(output, outfile)
-	outfile.close()
 
-	return(0)
+
+	return output
 
 
 if __name__ == "__main__":

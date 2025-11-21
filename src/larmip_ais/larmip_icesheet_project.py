@@ -1,12 +1,10 @@
 import numpy as np
 from netCDF4 import Dataset
+import xarray as xr
 import argparse
-import h5py
 import time
 import os
 import sys
-import pickle
-import fnmatch
 import re
 
 def ExtrapolateRate(sample, targyears, cyear_start, cyear_end):
@@ -32,26 +30,26 @@ def ExtrapolateRate(sample, targyears, cyear_start, cyear_end):
 	return(ext_sample)
 
 
-def ReadResponseFunctions(model, Tlen=None):
+def ReadResponseFunctions(model, rfunc_dir, Tlen=None):
 
 	# Read in the RF from the files
-	fname = "./RFunctions/RF_{}_BM08_R1.dat".format(model)
+	fname = os.path.join(rfunc_dir, "RF_{}_BM08_R1.dat".format(model))
 	with open(fname) as f:
 		r1 = np.array([float(row) for row in f])
 
-	fname = "./RFunctions/RF_{}_BM08_R2.dat".format(model)
+	fname = os.path.join(rfunc_dir,"RF_{}_BM08_R2.dat".format(model))
 	with open(fname) as f:
 		r2 = np.array([float(row) for row in f])
 
-	fname = "./RFunctions/RF_{}_BM08_R3.dat".format(model)
+	fname = os.path.join(rfunc_dir,"RF_{}_BM08_R3.dat".format(model))
 	with open(fname) as f:
 		r3 = np.array([float(row) for row in f])
 
-	fname = "./RFunctions/RF_{}_BM08_R4.dat".format(model)
+	fname = os.path.join(rfunc_dir,"RF_{}_BM08_R4.dat".format(model))
 	with open(fname) as f:
 		r4 = np.array([float(row) for row in f])
 
-	fname = "./RFunctions/RF_{}_BM08_R5.dat".format(model)
+	fname = os.path.join(rfunc_dir,"RF_{}_BM08_R5.dat".format(model))
 	with open(fname) as f:
 		r5 = np.array([float(row) for row in f])
 
@@ -116,21 +114,25 @@ def GetAvailableModels(model_dir):
 	return(modellist)
 
 
+def larmip_project_icesheet(pipeline_id, 
+							preprocess_data,
+							fit_icesheets_data,
+							fit_smb_data,
+							nsamps, 
+							targyears, 
+							baseyear, 
+							seed, 
+							rfunctions_dir,
+							cyear_start, 
+							cyear_end,
+							models=None,
+							ais_fpath=None,
+							eis_fpath=None,
+							pen_fpath=None,
+							wais_fpath=None,
+							smb_fpath=None,
+							):
 
-def larmip_project_icesheet(pipeline_id, nsamps, targyears, baseyear, seed, models, cyear_start, cyear_end):
-
-	# Load the preprocessed and calibration data
-	preprocess_file = "{}_preprocess.pkl".format(pipeline_id)
-	with open(preprocess_file, 'rb') as f:
-		preprocess_data = pickle.load(f)
-
-	fit_file = "{}_fit.pkl".format(pipeline_id)
-	with open(fit_file, 'rb') as f:
-		fit_data = pickle.load(f)
-
-	smb_file = "{}_fitsmb.pkl".format(pipeline_id)
-	with open(smb_file, 'rb') as f:
-		smb_data = pickle.load(f)
 
 	# Extract the preprocessed and calibration data
 	SAT = preprocess_data["SAT"]
@@ -139,26 +141,26 @@ def larmip_project_icesheet(pipeline_id, nsamps, targyears, baseyear, seed, mode
 	Tlen = preprocess_data["Tlen"]
 	scenario = preprocess_data["scenario"]
 
-	NumOmodel = fit_data["NumOmodel"]
-	OS_NoDelay_R1 = fit_data["OS_NoDelay_R1"]
-	OS_NoDelay_R2 = fit_data["OS_NoDelay_R2"]
-	OS_NoDelay_R3 = fit_data["OS_NoDelay_R3"]
-	OS_NoDelay_R4 = fit_data["OS_NoDelay_R4"]
-	OS_WiDelay_R1 = fit_data["OS_WiDelay_R1"]
-	OS_WiDelay_R2 = fit_data["OS_WiDelay_R2"]
-	OS_WiDelay_R3 = fit_data["OS_WiDelay_R3"]
-	OS_WiDelay_R4 = fit_data["OS_WiDelay_R4"]
-	OS_Delay_R1 = fit_data["OS_Delay_R1"]
-	OS_Delay_R2 = fit_data["OS_Delay_R2"]
-	OS_Delay_R3 = fit_data["OS_Delay_R3"]
-	OS_Delay_R4 = fit_data["OS_Delay_R4"]
-	MeltSensitivity = fit_data["MeltSensitivity"]
+	NumOmodel = fit_icesheets_data["NumOmodel"]
+	OS_NoDelay_R1 = fit_icesheets_data["OS_NoDelay_R1"]
+	OS_NoDelay_R2 = fit_icesheets_data["OS_NoDelay_R2"]
+	OS_NoDelay_R3 = fit_icesheets_data["OS_NoDelay_R3"]
+	OS_NoDelay_R4 = fit_icesheets_data["OS_NoDelay_R4"]
+	OS_WiDelay_R1 = fit_icesheets_data["OS_WiDelay_R1"]
+	OS_WiDelay_R2 = fit_icesheets_data["OS_WiDelay_R2"]
+	OS_WiDelay_R3 = fit_icesheets_data["OS_WiDelay_R3"]
+	OS_WiDelay_R4 = fit_icesheets_data["OS_WiDelay_R4"]
+	OS_Delay_R1 = fit_icesheets_data["OS_Delay_R1"]
+	OS_Delay_R2 = fit_icesheets_data["OS_Delay_R2"]
+	OS_Delay_R3 = fit_icesheets_data["OS_Delay_R3"]
+	OS_Delay_R4 = fit_icesheets_data["OS_Delay_R4"]
+	MeltSensitivity = fit_icesheets_data["MeltSensitivity"]
 
 	# Available models
 	#available_models = ["AISM_VUB", "BISI_LBL", "CISM_NCA", "FETI_ULB", "GRIS_LSC",
 	#"IMAU_UU", "ISSM_JPL", "ISSM_UCI", "MALI_DOE", "PISM_AWI", "PISM_DMI",
 	#"PISM_PIK", "PISM_VUW", "PS3D_PSU", "SICO_ILTS", "UA_UNN"]
-	available_models = GetAvailableModels("./RFunctions")
+	available_models = GetAvailableModels(rfunctions_dir)#"./RFunctions")
 
 	if models is None:
 		models = available_models
@@ -191,7 +193,7 @@ def larmip_project_icesheet(pipeline_id, nsamps, targyears, baseyear, seed, mode
 	for model_idx, this_model in enumerate(models):
 
 		# Read in the appropriate model's response functions
-		RF_R1, RF_R2, RF_R3, RF_R4, RF_R5 = ReadResponseFunctions(this_model, Tlen)
+		RF_R1, RF_R2, RF_R3, RF_R4, RF_R5 = ReadResponseFunctions(model=this_model, rfunc_dir = rfunctions_dir, Tlen=Tlen)
 
 		# Loop over the number of samples for this model
 		for i in np.arange(samps_per_model[model_idx]):
@@ -256,7 +258,7 @@ def larmip_project_icesheet(pipeline_id, nsamps, targyears, baseyear, seed, mode
 			sl_r5.append(this_sample)
 
 			# Generate a sample of SMB
-			this_sample = project_antsmb(Temp, Time, baseyear,rng, smb_data)
+			this_sample = project_antsmb(Temp, Time, baseyear,rng, fit_smb_data)
 			sl_smb.append(this_sample)
 
 
@@ -308,11 +310,82 @@ def larmip_project_icesheet(pipeline_id, nsamps, targyears, baseyear, seed, mode
 	wais_samples = sl_r2 + sl_r3 + sl_r4
 
 	# Write the global projections to netcdf files
-	WriteNetCDF(sl_su + sl_smb, None, targyears, baseyear, scenario, nsamps, pipeline_id)
-	WriteNetCDF(sl_r1, "EAIS", targyears, baseyear, scenario, nsamps, pipeline_id)
-	WriteNetCDF(sl_r5, "PEN", targyears, baseyear, scenario, nsamps, pipeline_id)
-	WriteNetCDF(wais_samples, "WAIS", targyears, baseyear, scenario, nsamps, pipeline_id)
-	WriteNetCDF(sl_smb, "SMB", targyears, baseyear, scenario, nsamps, pipeline_id)
+	#global
+	if ais_fpath:
+		ais_ds = make_ds(
+						slr = sl_su + sl_smb,
+						region = None,
+						targyears=targyears,
+						baseyear=baseyear,
+						scenario=scenario,
+						nsamps=nsamps,
+						pipeline_id=pipeline_id)
+		ais_ds.to_netcdf(ais_fpath, 
+				   encoding={
+					   "sea_level_change": {"dtype":"float32",
+							 "zlib":True, "complevel":4}},)
+		
+
+	if eis_fpath:
+		eais_ds = make_ds(
+						slr = sl_r1,
+						region = "EAIS",
+						targyears=targyears,
+						baseyear=baseyear,
+						scenario=scenario,
+						nsamps=nsamps,
+						pipeline_id=pipeline_id)
+		eais_ds.to_netcdf(eis_fpath, 
+					encoding={
+					   "sea_level_change": {"dtype":"float32",
+							 "zlib":True, "complevel":4}})
+
+	if pen_fpath:
+		pen_ds = make_ds(
+						slr = sl_r5,
+						region = "PEN",
+						targyears=targyears,
+						baseyear=baseyear,
+						scenario=scenario,
+						nsamps=nsamps,
+						pipeline_id=pipeline_id)
+		pen_ds.to_netcdf(pen_fpath, 
+				   encoding={
+					   "sea_level_change": {"dtype":"float32",
+							 "zlib":True, "complevel":4}})	
+	if wais_fpath:
+		wais_ds = make_ds(
+						slr = wais_samples,
+						region = "WAIS",
+						targyears=targyears,
+						baseyear=baseyear,
+						scenario=scenario,
+						nsamps=nsamps,
+						pipeline_id=pipeline_id)
+		wais_ds.to_netcdf(wais_fpath,
+					encoding={
+					   "sea_level_change": {"dtype":"float32",
+							 "zlib":True, "complevel":4}})
+	
+	if smb_fpath:
+		smb_ds = make_ds(
+						slr = sl_smb,
+						region = "SMB",
+						targyears=targyears,
+						baseyear=baseyear,
+						scenario=scenario,
+						nsamps=nsamps,
+						pipeline_id=pipeline_id)
+		smb_ds.to_netcdf(smb_fpath, 
+				   encoding={
+					   "sea_level_change": {"dtype":"float32",
+							 "zlib":True, "complevel":4}})
+
+	#WriteNetCDF(sl_su + sl_smb, None, targyears, baseyear, scenario, nsamps, pipeline_id)
+	#WriteNetCDF(sl_r1, "EAIS", targyears, baseyear, scenario, nsamps, pipeline_id)
+	#WriteNetCDF(sl_r5, "PEN", targyears, baseyear, scenario, nsamps, pipeline_id)
+	#WriteNetCDF(wais_samples, "WAIS", targyears, baseyear, scenario, nsamps, pipeline_id)
+	#WriteNetCDF(sl_smb, "SMB", targyears, baseyear, scenario, nsamps, pipeline_id)
 
 	# Distribute the SMB across the AIS regions
 	r1_frac = sl_r1 / sl_su
@@ -336,11 +409,11 @@ def larmip_project_icesheet(pipeline_id, nsamps, targyears, baseyear, seed, mode
 	# Save the projections to a pickle
 	output = {"sl_r1": sl_r1, "sl_r2": sl_r2, "sl_r3": sl_r3, "sl_r4": sl_r4, "sl_r5": sl_r5, \
 				"targyears": targyears, "baseyear": baseyear, "models": models, "scenario": scenario}
-	outfile = open(os.path.join(os.path.dirname(__file__), "{}_projections.pkl".format(pipeline_id)), 'wb')
-	pickle.dump(output, outfile)
-	outfile.close()
+	#outfile = open(os.path.join(os.path.dirname(__file__), "{}_projections.pkl".format(pipeline_id)), 'wb')
+	#pickle.dump(output, outfile)
+	#outfile.close()
 
-	return(None)
+	return output
 
 
 '''
@@ -350,7 +423,11 @@ Projects the surface mass balance for Antarctica using the AR5 method.
 Adapted from code provided by Jonathan Gregory.
 
 '''
-def project_antsmb(temp_sample, years, baseyear, rng,fit_dict,):
+def project_antsmb(temp_sample, 
+				   years, 
+				   baseyear, 
+				   rng,
+				   fit_smb_dict,):
 
 	# Initialize the smb values for this sample
 	antsmb = np.zeros(len(temp_sample))
@@ -360,10 +437,10 @@ def project_antsmb(temp_sample, years, baseyear, rng,fit_dict,):
 	int_temp = np.cumsum(temp_sample[baseyear_idx:])
 
 	# Extract relevant parameters from the fit dictionary
-	pcoK = fit_dict['pcoK']
-	KoKg = fit_dict['KoKg']
-	mSLEoGt = fit_dict['mSLEoGt']
-	smax = fit_dict['smax']
+	pcoK = fit_smb_dict['pcoK']
+	KoKg = fit_smb_dict['KoKg']
+	mSLEoGt = fit_smb_dict['mSLEoGt']
+	smax = fit_smb_dict['smax']
 
 	# Generate a distribution of products of the above two factors
 	#pcoKg = (pcoK[0]+rng.standard_normal([nr,nt,1])*pcoK[1])*\
@@ -378,7 +455,47 @@ def project_antsmb(temp_sample, years, baseyear, rng,fit_dict,):
 	return antsmb
 
 
+def make_ds(slr, 
+			region,
+			targyears,
+			baseyear,
+			scenario,
+			nsamps,
+			pipeline_id):
+	if region is None:
+		description = "Global SLR contribution from Antarctica using the LARMIP module"
+	else:
+		description = "Global SLR contribution from Antarctica ({}) using the LARMIP module".format(region)
 
+	years = np.array(targyears)
+	samples = np.arange(nsamps)
+	locations = np.array([-1])
+	lat = np.array([np.inf])
+	lon = np.array([np.inf])
+	sea_level_change = slr[:,:,np.newaxis]
+
+	ds = xr.Dataset(
+		{
+			'sea_level_change': (('samples', 'years', 'locations'), sea_level_change)	
+		},
+		coords = {
+			'samples': samples,
+			'years': years,
+			'locations': locations,
+			'lat': (('locations',), lat),
+			'lon': (('locations',), lon)
+		},
+		attrs = {
+			'description': description,
+			'history': "Created " + time.ctime(time.time()),
+			'source': "FACTS: {0}. ".format(pipeline_id),
+			'baseyear': baseyear,
+			'scenario': scenario,
+		}
+	)
+	ds.sea_level_change.attrs['units'] = "mm"
+	return ds
+				  
 def WriteNetCDF(slr, region, targyears, baseyear, scenario, nsamps, pipeline_id):
 
 	# Write the total global projections to a netcdf file

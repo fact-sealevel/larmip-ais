@@ -3,10 +3,14 @@ import argparse
 import h5py
 import os
 import sys
-import pickle
 
 
-def GetSATData(fname, scenario, refyear_start=1850, refyear_end=1900, year_start=1900, year_end=2300):
+def GetSATData(fname, 
+			   scenario, 
+			   refyear_start, 
+			   refyear_end, 
+			   year_start, 
+			   year_end):
 
 	# Open the file
 	df_ssp = h5py.File(fname,'r')
@@ -41,20 +45,31 @@ def GetSATData(fname, scenario, refyear_start=1850, refyear_end=1900, year_start
 	return(SAT, Time, nens)
 
 
-def larmip_preprocess_icesheet(scenario, pipeline_id, fname):
+def larmip_preprocess_icesheet(scenario, 
+							   pipeline_id, 
+							   fname,
+							   refyear_start,
+							   refyear_end,
+							   year_start,
+							   year_end):
 
 	# Load the temperature data
-	SAT,Time,NumTensemble = GetSATData(fname, scenario)
+	SAT,Time,NumTensemble = GetSATData(fname, 
+									scenario,
+									refyear_start,
+									refyear_end,
+									year_start,
+									year_end)
 	#SAT,Time,NumTensemble = GetSATData("./data/IPCC_SSP_Projections/twolayer_SSPs.h5", scenario)
 	Tlen = len(Time)
 
 	# Save the preprocessed data to a pickle
 	output = {"SAT": SAT, "Time": Time, "NumTensemble": NumTensemble, "Tlen": Tlen, "scenario": scenario}
-	outfile = open(os.path.join(os.path.dirname(__file__), "{}_preprocess.pkl".format(pipeline_id)), 'wb')
-	pickle.dump(output, outfile)
-	outfile.close()
+	#outfile = open(os.path.join(os.path.dirname(__file__), "{}_preprocess.pkl".format(pipeline_id)), 'wb')
+	#pickle.dump(output, outfile)
+	#outfile.close()
 
-	return(None)
+	return output
 
 
 if __name__ == "__main__":
