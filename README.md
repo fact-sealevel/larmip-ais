@@ -45,7 +45,7 @@ echo "New_York	12	40.70	-74.01" > ./data/input/location.lst
 
 Run the application:
 ```shell
-docker run --rm \                                                                ok | 24s | 16:31:06 
+docker run --rm \ 
 -v /path/to/data/input:/mnt/larmip_data_in \
 -v /path/to/data/output:/mnt/larmip_data_out \
 larmip-ais \
