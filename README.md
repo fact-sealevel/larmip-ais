@@ -12,8 +12,6 @@ A. Levermann, R. Winkelmann, T. Albrecht, H. Goelzer, N.R. Golledge, R. Greve, P
 
 Earth System Dynamics 11 (2020) 35-76, doi 10.5194/esd-11-35-2020.
 
-(copied from larmip/AIS readme in FACTS 1)
-
 ## Example
 
 This application can run on emissions-projected climate data. 
@@ -48,7 +46,7 @@ Run the application:
 docker run --rm \ 
 -v /path/to/data/input:/mnt/larmip_data_in \
 -v /path/to/data/output:/mnt/larmip_data_out \
-larmip-ais \
+ghcr.io/fact-sealevel/larmip-ais:v0.1.0 \
 --scenario 'ssp245' \
 --pipeline-id 'my_pipeline_id' \
 --climate-data-file /mnt/larmip_data_in/climate.nc \
