@@ -1,7 +1,7 @@
 [project]
 name = "larmip-ais"
 version = "0.1.0"
-description = "Add your description here"
+description = "This module ports into the FACTS framework the Antatctic dynamic contribution emulation of the Linear response of the Antarctic ice sheet to future warming Model Intercomparision Project (LARMIP) 2020. It augments it with a surface mass balance term following IPCC AR5."
 readme = "README.md"
 authors = [
     { name = "Emma Marshall", email = "emarshall@rhg.com" }
