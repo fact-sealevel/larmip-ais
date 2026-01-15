@@ -5,6 +5,10 @@ from larmip_ais.larmip_icesheet_postprocess import larmip_postprocess_icesheet
 import numpy as np
 
 import click
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 @click.command()
@@ -168,6 +172,11 @@ import click
     type=str,
     help="File path to save localized total Antarctic sea-level projections",
 )
+@click.option(
+    "--debug/--no-debug",
+    default=False,
+    envvar="LARMIP_AIS_DEBUG",
+)
 def main(
     scenario,
     pipeline_id,
@@ -197,9 +206,16 @@ def main(
     wais_local_output_file,
     eais_local_output_file,
     ais_local_output_file,
+    debug,
 ):
     click.echo("Hello from larmip-ais!")
+    if debug:
+        logging.root.setLevel(logging.DEBUG)
+    else:
+        logging.root.setLevel(logging.INFO)
+
     # preprocess
+    logger.info("Starting preprocessing step...")
     preprocess_dict = larmip_preprocess_icesheet(
         scenario=scenario,
         pipeline_id=pipeline_id,
@@ -209,8 +225,10 @@ def main(
         year_start=year_start,
         year_end=year_end,
     )
+    logger.info("Finished preprocessing step")
 
     # fit - 2 different commands here
+    logger.info("Starting fitting step...")
     fit_icesheets_dict = larmip_fit_icesheet(
         pipeline_id=pipeline_id,
         scaling_coefficients_dir=scaling_coefficients_dir,
@@ -219,10 +237,12 @@ def main(
     fit_smb_dict = larmip_fit_smb(
         pipeline_id=pipeline_id, preprocess_dict=preprocess_dict
     )
+    logger.info("Finished fitting step")
 
     # make targyears
     targyears = np.arange(pyear_start, pyear_end + 1, pyear_step)
     # project
+    logger.info("Starting projection step...")
     project_dict = larmip_project_icesheet(
         pipeline_id=pipeline_id,
         preprocess_data=preprocess_dict,
@@ -241,8 +261,10 @@ def main(
         wais_fpath=wais_global_output_file,
         smb_fpath=smb_global_output_file,
     )
+    logger.info("Finished projection step")
 
     # postprocess
+    logger.info("Starting postprocessing step...")
     larmip_postprocess_icesheet(
         project_dict=project_dict,
         location_file=location_file,
@@ -253,3 +275,4 @@ def main(
         eais_local_output_file=eais_local_output_file,
         ais_local_output_file=ais_local_output_file,
     )
+    logger.info("Finished postprocessing step")
