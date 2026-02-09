@@ -18,7 +18,7 @@ This application can run on emissions-projected climate data.
 
 ### Setup
 
-Clone the repository and create directories to hold input and output data. 
+From your project root, create directories to hold input and output data and download the input data required to run this module. 
 
 ```shell
 mkdir -p ./data/input
