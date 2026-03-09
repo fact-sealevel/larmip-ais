@@ -1,5 +1,4 @@
 import numpy as np
-from netCDF4 import Dataset
 import xarray as xr
 import argparse
 import time
@@ -400,12 +399,6 @@ def larmip_project_icesheet(
             },
         )
 
-    # WriteNetCDF(sl_su + sl_smb, None, targyears, baseyear, scenario, nsamps, pipeline_id)
-    # WriteNetCDF(sl_r1, "EAIS", targyears, baseyear, scenario, nsamps, pipeline_id)
-    # WriteNetCDF(sl_r5, "PEN", targyears, baseyear, scenario, nsamps, pipeline_id)
-    # WriteNetCDF(wais_samples, "WAIS", targyears, baseyear, scenario, nsamps, pipeline_id)
-    # WriteNetCDF(sl_smb, "SMB", targyears, baseyear, scenario, nsamps, pipeline_id)
-
     # Distribute the SMB across the AIS regions
     r1_frac = sl_r1 / sl_su
     r2_frac = sl_r2 / sl_su
@@ -487,6 +480,47 @@ def project_antsmb(
     return antsmb
 
 
+def make_projection_ds(icesamps, icetype, data_years, scenario, pipeline_id, baseyear):
+    data = np.asarray(icesamps)[:, :, np.newaxis]
+    ds = xr.Dataset(
+        data_vars={
+            "sea_level_change": (
+                ("samples", "years", "locations"),
+                data,
+                {
+                    "units": "mm",
+                },
+            ),
+            "lat": (
+                ("locations",),
+                np.array([np.float32(np.inf)], dtype=np.float32),
+            ),
+            "lon": (
+                ("locations",),
+                np.array([np.float32(np.inf)], dtype=np.float32),
+            ),
+        },
+        coords={
+            "years": (
+                ("years",),
+                data_years,
+            ),
+            "samples": (("samples"), np.arange(icesamps.shape[0])),
+            "locations": (
+                "locations",
+                np.array([-1]),
+            ),
+        },
+        attrs={
+            "description": f"Global SLR contribution from {icetype} according to FittedISMIP-gris module workflow",
+            "history": "Created " + time.ctime(time.time()),
+            "scenario": scenario,
+            "baseyear": baseyear,
+        },
+    )
+    return ds
+
+
 def make_ds(slr, region, targyears, baseyear, scenario, nsamps, pipeline_id):
     if region is None:
         description = "Global SLR contribution from Antarctica using the LARMIP module"
@@ -498,18 +532,36 @@ def make_ds(slr, region, targyears, baseyear, scenario, nsamps, pipeline_id):
     years = np.array(targyears)
     samples = np.arange(nsamps)
     locations = np.array([-1])
-    lat = np.array([np.inf])
-    lon = np.array([np.inf])
+    lat = np.array([np.float32(np.inf)], dtype=np.float32)
+    lon = np.array([np.float32(np.inf)], dtype=np.float32)
     sea_level_change = slr[:, :, np.newaxis]
 
     ds = xr.Dataset(
-        {"sea_level_change": (("samples", "years", "locations"), sea_level_change)},
+        data_vars={
+            "sea_level_change": (
+                ("samples", "years", "locations"),
+                sea_level_change,
+                {"units": "mm"},
+            ),
+            "lat": (
+                ("locations",),
+                lat,
+            ),
+            "lon": (
+                ("locations",),
+                lon,
+            ),
+        },
         coords={
-            "samples": samples,
-            "years": years,
-            "locations": locations,
-            "lat": (("locations",), lat),
-            "lon": (("locations",), lon),
+            "years": (
+                ("years",),
+                years,
+            ),
+            "samples": (("samples"), samples),
+            "locations": (
+                "locations",
+                locations,
+            ),
         },
         attrs={
             "description": description,
@@ -519,66 +571,8 @@ def make_ds(slr, region, targyears, baseyear, scenario, nsamps, pipeline_id):
             "scenario": scenario,
         },
     )
-    ds.sea_level_change.attrs["units"] = "mm"
+
     return ds
-
-
-def WriteNetCDF(slr, region, targyears, baseyear, scenario, nsamps, pipeline_id):
-    # Write the total global projections to a netcdf file
-    if region is None:
-        nc_filename = os.path.join(
-            os.path.dirname(__file__), "{}_globalsl.nc".format(pipeline_id)
-        )
-        nc_description = (
-            "Global SLR contribution from Antarctica using the LARMIP module"
-        )
-    else:
-        nc_filename = os.path.join(
-            os.path.dirname(__file__), "{}_{}_globalsl.nc".format(pipeline_id, region)
-        )
-        nc_description = "Global SLR contribution from Antarctica ({}) using the LARMIP module".format(
-            region
-        )
-    rootgrp = Dataset(nc_filename, "w", format="NETCDF4")
-
-    # Define Dimensions
-    # year_dim = rootgrp.createDimension("years", len(targyears))
-    # samp_dim = rootgrp.createDimension("samples", nsamps)
-    # loc_dim = rootgrp.createDimension("locations", 1)
-
-    # Populate dimension variables
-    year_var = rootgrp.createVariable("years", "i4", ("years",))
-    samp_var = rootgrp.createVariable("samples", "i8", ("samples",))
-    loc_var = rootgrp.createVariable("locations", "i8", ("locations",))
-    lat_var = rootgrp.createVariable("lat", "f4", ("locations",))
-    lon_var = rootgrp.createVariable("lon", "f4", ("locations",))
-
-    # Create a data variable
-    samps = rootgrp.createVariable(
-        "sea_level_change",
-        "f4",
-        ("samples", "years", "locations"),
-        zlib=True,
-        complevel=4,
-    )
-
-    # Assign attributes
-    rootgrp.description = nc_description
-    rootgrp.history = "Created " + time.ctime(time.time())
-    rootgrp.source = "FACTS: {0}. ".format(pipeline_id)
-    rootgrp.baseyear = baseyear
-    rootgrp.scenario = scenario
-    samps.units = "mm"
-
-    # Put the data into the netcdf variables
-    year_var[:] = targyears
-    samp_var[:] = np.arange(nsamps)
-    samps[:, :, :] = slr[:, :, np.newaxis]
-    lat_var[:] = np.inf
-    lon_var[:] = np.inf
-    loc_var[:] = -1
-
-    return None
 
 
 if __name__ == "__main__":
