@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] 
 
+### Changed 
+
+- Changed structure of global output to conform to other module outputs. `lat` and `lon` are now data variables instead of coordinate variables. ([PR 7](https://github.com/fact-sealevel/larmip-ais/pull/7), [@e-marshall](https://github.com/e-marshall)).
 
 
 ## [0.1.1] - 2026-02-09
