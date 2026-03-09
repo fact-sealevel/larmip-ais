@@ -1,5 +1,4 @@
 import numpy as np
-from netCDF4 import Dataset
 import xarray as xr
 import argparse
 import time
@@ -520,6 +519,8 @@ def make_projection_ds(icesamps, icetype, data_years, scenario, pipeline_id, bas
         },
     )
     return ds
+
+
 def make_ds(slr, region, targyears, baseyear, scenario, nsamps, pipeline_id):
     if region is None:
         description = "Global SLR contribution from Antarctica using the LARMIP module"
@@ -570,11 +571,8 @@ def make_ds(slr, region, targyears, baseyear, scenario, nsamps, pipeline_id):
             "scenario": scenario,
         },
     )
-  
+
     return ds
-
-
-
 
 
 if __name__ == "__main__":
